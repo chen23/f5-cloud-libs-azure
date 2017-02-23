@@ -19,7 +19,7 @@
     "jshint": "latest"
   },
   "scripts": {
-    "test": "node_modules/nodeunit/bin/nodeunit --reporter eclipse test test/lib",
+    "test": "echo NO TESTS",
     "package": "./package.sh"
   }
 }
