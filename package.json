@@ -21,6 +21,6 @@
   },
   "scripts": {
     "test": "node_modules/nodeunit/bin/nodeunit --reporter eclipse test test/lib",
-    "package": "./package.sh"
+    "package": "bash ./package.sh"
   }
 }
