@@ -1,6 +1,6 @@
 #!/bin/bash
 
-ARGS=`getopt -o r:v:u:p:s:m: --long resourceGroup:,vmssName:,userName:,password:,azureSecretFile:,managementPort: -n $0 -- "$@"`
+ARGS=`getopt -o r:v:u:p:s:m:w: --long resourceGroup:,vmssName:,userName:,password:,azureSecretFile:,managementPort:,wafScriptArgs: -n $0 -- "$@"`
 eval set -- "$ARGS"
 # Parse the command line arguments
 while true; do
@@ -23,12 +23,15 @@ while true; do
         -m|--managementPort)
             mgmt_port=$2
             shift 2;;
+        -w|--wafScriptArgs)
+            waf_script_args=$2
+            shift 2;;
         --)
             shift
             break;;
     esac
 done
-
+echo "WAF_SCRIPT: $waf_script_args"
 dfl_mgmt_port=`tmsh list sys httpd ssl-port | grep ssl-port | sed 's/ssl-port //;s/ //g'`
 selfip=$(tmsh list net self self_1nic address | grep -o '[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}')
 instance=`curl http://169.254.169.254/metadata/v1/InstanceInfo --silent --retry 5 | jq .ID | sed 's/_//;s/\"//g'`
