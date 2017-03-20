@@ -61,7 +61,6 @@ if [ -f /config/cloud/master ]; then
     else
         echo "Appears the $icall_handler_name icall already exists!"
     fi
-
 fi
 
 if [[ $? == 0 ]]; then

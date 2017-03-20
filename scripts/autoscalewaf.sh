@@ -50,6 +50,7 @@ f5-rest-node /config/cloud/node_modules/f5-cloud-libs/scripts/azure/runScripts.j
 
 if [ -f /config/cloud/master ]; then
     echo 'SELF-SELECTED as Master ... Initiating Autoscale Cluster'
+
     # UCS Loaded?
     ucs_loaded=`cat /config/cloud/master | jq .ucsLoaded`
     echo "UCS Loaded: $ucs_loaded"
@@ -84,5 +85,4 @@ else
     echo "AUOTSCALE INIT FAIL"
     exit 1
 fi
-
 exit
