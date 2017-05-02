@@ -51,12 +51,12 @@ BigIp = require('f5-cloud-libs').bigIp;
 bigip = new BigIp({logger: logger});
 
 bigip.init(
-     'localhost', 
-     'admin', 
-     'file:///config/cloud/passwd', 
-     { 
-          passwordIsUrl: true, 
-          port: '8443' 
+     'localhost',
+     'admin',
+     'file:///config/cloud/passwd',
+     {
+          passwordIsUrl: true,
+          port: '8443'
      }
 )
 .then(function() {
@@ -87,7 +87,7 @@ bigip.init(
  * Lists all route tables in the subscription
  *
  * @returns {Promise} A promise which can be resolved with a non-error response from Azure REST API
- *                    
+ *
  */
 function listRouteTables() {
      return new Promise(
@@ -96,7 +96,7 @@ function listRouteTables() {
           (error, data) => {
                if (error) {
                     reject(error);
-               } 
+               }
                else {
                     resolve(data);
                }
@@ -113,7 +113,7 @@ function listRouteTables() {
  * @param {Array} routeParams - New route parameters
  *
  * @returns {Promise} A promise which can be resolved with a non-error response from Azure REST API
- *                    
+ *
  */
 function updateRoutes(routeTableGroup, routeTableName, routeName, routeParams) {
      return new Promise(
@@ -122,7 +122,7 @@ function updateRoutes(routeTableGroup, routeTableName, routeName, routeParams) {
           (error, data) => {
                if (error) {
                     reject(error);
-               } 
+               }
                else {
                     resolve(data);
                }
@@ -137,12 +137,12 @@ function updateRoutes(routeTableGroup, routeTableName, routeName, routeParams) {
  * @param {String} self - The internal self IP address of this BIG-IP
  *
  * @returns {Promise} A promise which can be resolved with a non-error response from Azure REST API
- *                    
+ *
  */
-function matchRoutes(routeTables, self) {     
+function matchRoutes(routeTables, self) {
      var fields = self.split('/');
      var selfIp = fields[0];
-     
+
      var t;
      var tag;
      var routeTableGroup;
@@ -151,8 +151,9 @@ function matchRoutes(routeTables, self) {
      var r;
      var routeName;
      var routeParams;
-     
-     var retryRoutes = function() {
+     var routeArr = [];
+
+     var retryRoutes = function(routeTableGroup, routeTableName, routeName, routeParams) {
          return new Promise (
              function(resolve, reject) {
                  updateRoutes(routeTableGroup, routeTableName, routeName, routeParams)
@@ -161,7 +162,8 @@ function matchRoutes(routeTables, self) {
                          resolve();
                      })
                      .catch(function(error) {
-                         if (error.statusCode === 429) {
+                          logger.info("Update route error: ", error);
+                         if (error.response.statusCode == "429") {
                              reject();
                          }
                          else {
@@ -170,28 +172,30 @@ function matchRoutes(routeTables, self) {
                      });
              });
      };
-     
+
      for (t in routeTables) {
           if (routeTables[t].tags && routeTables[t].tags.f5_ha) {
                tag = routeTables[t].tags.f5_ha;
-               
+
                if (routeTableTags.indexOf(tag) !== -1) {
                     routeTableGroup = routeTables[t].id.split("/")[4];
                     routeTableName = routeTables[t].name;
                     routes = routeTables[t].routes
-                    
+
                     for (r in routes) {
-                         if (routeFilter.indexOf(routes[r].addressPrefix) !== -1) {                    
-                              routeName = routes[r].name;                    
+                         if (routeFilter.indexOf(routes[r].addressPrefix) !== -1) {
+                              routeName = routes[r].name;
                               routes[r].nextHopType = 'VirtualAppliance';
                               routes[r].nextHopIpAddress = selfIp;
                               routeParams = routes[r];
-                              
-                              util.tryUntil(this, {maxRetries: 4, retryIntervalMs: 15000}, retryRoutes);
+
+                              routeArr = [routeTableGroup, routeTableName, routeName, routeParams];
+
+                              util.tryUntil(this, {maxRetries: 4, retryIntervalMs: 15000}, retryRoutes, routeArr);
                          }
                     }
                }
-          } 
+          }
      }
 }
 
@@ -201,7 +205,7 @@ function matchRoutes(routeTables, self) {
  * @param {String} resourceGroup - Name of the resource group
  *
  * @returns {Promise} A promise which can be resolved with a non-error response from Azure REST API
- *                    
+ *
  */
 function listAzNics(resourceGroup) {
      return new Promise(
@@ -210,7 +214,7 @@ function listAzNics(resourceGroup) {
           (error, data) => {
                if (error) {
                     reject(error);
-               } 
+               }
                else {
                     resolve(data);
                }
@@ -224,7 +228,7 @@ function listAzNics(resourceGroup) {
  * @param {String} resourceGroup - Name of the resource group
  *
  * @returns {Promise} A promise which can be resolved with a non-error response from Azure REST API
- *                    
+ *
 */
 function listPublicIPs(resourceGroup) {
      return new Promise(
@@ -233,7 +237,7 @@ function listPublicIPs(resourceGroup) {
           (error, data) => {
                if (error) {
                     reject(error);
-               } 
+               }
                else {
                     resolve(data);
                }
@@ -244,17 +248,17 @@ function listPublicIPs(resourceGroup) {
 /**
  * Returns a network interface IP configuration
  *
- * @param {Object} ipConfig - The full Azure IP configuration 
+ * @param {Object} ipConfig - The full Azure IP configuration
  *
  * @returns {Array} An array of IP configuration parameters
- *                    
+ *
 */
 function getNicConfig(ipConfig) {
      return {
           name: ipConfig.name,
           privateIPAllocationMethod: ipConfig.privateIPAllocationMethod,
-          privateIPAddress: ipConfig.privateIPAddress, 
-          primary: ipConfig.primary, 
+          privateIPAddress: ipConfig.privateIPAddress,
+          primary: ipConfig.primary,
           publicIPAddress: ipConfig.publicIPAddress,
           subnet: ipConfig.subnet
      }
@@ -268,12 +272,12 @@ function getNicConfig(ipConfig) {
  * @param {String} self - The external self IP address of this BIG-IP
  *
  * @returns {Promise} A promise which can be resolved with a non-error response from Azure REST API
- *                    
+ *
  */
 function matchNics(nics, pips, self) {
      var fields = self.split('/');
-     var selfIp = fields[0];    
-     
+     var selfIp = fields[0];
+
      var i;
      var ipConfigurations;
      var p;
@@ -281,14 +285,14 @@ function matchNics(nics, pips, self) {
      var myNicConfig;
      var theirNicName;
      var theirNicConfig;
-     
+
      var orphanedPipsArr = [];
      var pip;
      var pipName;
      var name;
      var pipPrivate;
      var subnet;
-         
+
      var c;
      var theirNicArr = [];
      var theirName;
@@ -297,21 +301,21 @@ function matchNics(nics, pips, self) {
      var theirPrimary;
      var theirSubnetId;
      var theirPublicIpId;
-     
-     var myNicArr = [];     
+
+     var myNicArr = [];
      var myName;
      var myPrivateIpMethod;
      var myPrivateIp;
      var myPrimary;
      var mySubnetId;
      var myPublicIpId;
-     
-     var ourLocation;     
+
+     var ourLocation;
      var theirNicParams;
      var myNicParams;
-       
+
      for (i in nics) {
-          ipConfigurations = nics[i].ipConfigurations;          
+          ipConfigurations = nics[i].ipConfigurations;
           for (p in ipConfigurations) {
                if (ipConfigurations[p].privateIPAddress === selfIp) {
                     myNicName = nics[i].name;
@@ -323,67 +327,67 @@ function matchNics(nics, pips, self) {
                }
           }
      }
-     
+
      for (p in pips) {
           if (pips[p].tags.f5_privateIp && pips[p].tags.f5_extSubnetId && pips[p].name.includes(extIpName)) {
                pip = {};
-               pip.id = pips[p].id;               
+               pip.id = pips[p].id;
                pipName = pips[p].name;
                name = pipName.replace(extIpName, extIpConfigName);
-               pipPrivate = pips[p].tags.f5_privateIp;               
+               pipPrivate = pips[p].tags.f5_privateIp;
                subnet = {};
                subnet.id = pips[p].tags.f5_extSubnetId;
-               
-               if (!pips[p].ipConfiguration) {                
-                    orphanedPipsArr.push({    
+
+               if (!pips[p].ipConfiguration) {
+                    orphanedPipsArr.push({
                          'name': name,
                          'privateIPAllocationMethod': 'Static',
-                         'privateIPAddress': pipPrivate, 
-                         'primary': false, 
-                         'publicIPAddress': pip, 
+                         'privateIPAddress': pipPrivate,
+                         'primary': false,
+                         'publicIPAddress': pip,
                          'subnet': subnet
-                    }); 
-               }              
+                    });
+               }
           }
      }
-         
+
      for (c in theirNicConfig.ipConfigurations) {
           theirNicArr.push(getNicConfig(theirNicConfig.ipConfigurations[c]));
      }
-     
+
      for (c in myNicConfig.ipConfigurations) {
           myNicArr.push(getNicConfig(myNicConfig.ipConfigurations[c]));
      }
-     
+
      for (i=theirNicArr.length-1; i>=0; i--) {
-          if (theirNicArr[i].name.includes(extIpConfigName)) {           
+          if (theirNicArr[i].name.includes(extIpConfigName)) {
                myNicArr.push({
-                    'name': theirNicArr[i].name, 
-                    'privateIPAllocationMethod': theirNicArr[i].privateIPAllocationMethod, 
-                    'privateIPAddress': theirNicArr[i].privateIPAddress, 
-                    'primary': theirNicArr[i].primary, 
+                    'name': theirNicArr[i].name,
+                    'privateIPAllocationMethod': theirNicArr[i].privateIPAllocationMethod,
+                    'privateIPAddress': theirNicArr[i].privateIPAddress,
+                    'primary': theirNicArr[i].primary,
                     'publicIPAddress': theirNicArr[i].publicIPAddress,
                     'subnet': theirNicArr[i].subnet
-               }); 
+               });
                theirNicArr.splice(i, 1);
           }
      }
-     
-     for (i=orphanedPipsArr.length-1; i>=0; i--) {          
+
+     for (i=orphanedPipsArr.length-1; i>=0; i--) {
           myNicArr.push({
-               'name': orphanedPipsArr[i].name, 
-               'privateIPAllocationMethod': orphanedPipsArr[i].privateIPAllocationMethod, 
-               'privateIPAddress': orphanedPipsArr[i].privateIPAddress, 
-               'primary': orphanedPipsArr[i].primary, 
+               'name': orphanedPipsArr[i].name,
+               'privateIPAllocationMethod': orphanedPipsArr[i].privateIPAllocationMethod,
+               'privateIPAddress': orphanedPipsArr[i].privateIPAddress,
+               'primary': orphanedPipsArr[i].primary,
                'publicIPAddress': orphanedPipsArr[i].publicIPAddress,
                'subnet': orphanedPipsArr[i].subnet
-          }); 
+          });
      }
-     
-     ourLocation = myNicConfig.location; 
-     theirNicParams = { location: ourLocation, ipConfigurations:theirNicArr };    
+
+     ourLocation = myNicConfig.location;
+     theirNicParams = { location: ourLocation, ipConfigurations:theirNicArr };
      myNicParams = { location: ourLocation, ipConfigurations:myNicArr };
-     
+
      disassociateNics(resourceGroup, theirNicName, theirNicParams)
      .then(function (result) {
           logger.info("Disassociate NICs result: ", result);
@@ -405,7 +409,7 @@ function matchNics(nics, pips, self) {
  * @param {Array} theirNicParams - Network interface parameters
  *
  * @returns {Promise} A promise which can be resolved with a non-error response from Azure REST API
- *                    
+ *
  */
 function disassociateNics(resourceGroup, theirNicName, theirNicParams) {
      return new Promise(
@@ -414,7 +418,7 @@ function disassociateNics(resourceGroup, theirNicName, theirNicParams) {
           (error, data) => {
                if (error) {
                     reject(error);
-               } 
+               }
                else {
                     resolve(data);
                }
@@ -430,7 +434,7 @@ function disassociateNics(resourceGroup, theirNicName, theirNicParams) {
  * @param {Array} myNicParams - Network interface parameters
  *
  * @returns {Promise} A promise which can be resolved with a non-error response from Azure REST API
- *                    
+ *
  */
 function associateNics(resourceGroup, myNicName, myNicParams) {
      return new Promise(
@@ -439,7 +443,7 @@ function associateNics(resourceGroup, myNicName, myNicParams) {
           (error, data) => {
                if (error) {
                     reject(error);
-               } 
+               }
                else {
                     resolve(data);
                }
