@@ -24,7 +24,7 @@ var resourceGroup = credentialsFile.resourceGroup;
 
 var msRestAzure = require('ms-rest-azure');
 var AzureEnvironment = require('ms-rest-azure/lib/azureEnvironment');
-var environment = AzureEnvironment.AzureCloud;
+var environment = AzureEnvironment.Azure;
 var options = { environment: environment };
 var credentials = new msRestAzure.ApplicationTokenCredentials(clientId, tenantId, secret, options);
 
