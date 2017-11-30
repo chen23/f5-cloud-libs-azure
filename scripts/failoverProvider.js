@@ -23,10 +23,13 @@ var secret = credentialsFile.secret;
 var resourceGroup = credentialsFile.resourceGroup;
 
 var msRestAzure = require('ms-rest-azure');
-var credentials = new msRestAzure.ApplicationTokenCredentials(clientId, tenantId, secret);
+var AzureEnvironment = require('ms-rest-azure/lib/azureEnvironment');
+var environment = AzureEnvironment.AzureCloud;
+var options = { environment: environment };
+var credentials = new msRestAzure.ApplicationTokenCredentials(clientId, tenantId, secret, options);
 
 var networkManagementClient = require('azure-arm-network');
-var networkClient = new networkManagementClient(credentials, subscriptionId);
+var networkClient = new networkManagementClient(credentials, subscriptionId, environment.resourceManagerEndpointUrl);
 
 if (fs.existsSync('/config/cloud/managedRoutes')) {
     var routeFilter = fs.readFileSync('/config/cloud/managedRoutes', 'utf8').replace(/(\r\n|\n|\r)/gm,"").split(',');
@@ -346,6 +349,7 @@ function matchNics(nics, pips, self, tgs, global) {
     var ourLocation;
     var theirNsg;
     var myNsg;
+    var enableIPForwarding;
 
     var associateArr = [];
     var disassociateArr = [];
@@ -467,9 +471,9 @@ function matchNics(nics, pips, self, tgs, global) {
     ourLocation = myNicConfig.location;
     theirNsg = theirNicConfig.networkSecurityGroup;
     myNsg = myNicConfig.networkSecurityGroup;
-
-    theirNicParams = { location: ourLocation, ipConfigurations:theirNicArr, networkSecurityGroup: theirNsg };
-    myNicParams = { location: ourLocation, ipConfigurations:myNicArr, networkSecurityGroup: myNsg };
+    enableIPForwarding = myNicConfig.enableIPForwarding
+    theirNicParams = { location: ourLocation, ipConfigurations:theirNicArr, networkSecurityGroup: theirNsg, enableIPForwarding: enableIPForwarding };
+    myNicParams = { location: ourLocation, ipConfigurations:myNicArr, networkSecurityGroup: myNsg, enableIPForwarding: enableIPForwarding };
 
     disassociateArr = [resourceGroup, theirNicName, theirNicParams];
     associateArr = [resourceGroup, myNicName, myNicParams];
