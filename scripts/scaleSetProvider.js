@@ -45,11 +45,12 @@ logger.info('Instance ID: ' + instanceId + ' Load Balancer Name: ' + loadBalance
 
 bigip.init(
     'localhost',
-    'admin',
+    'svc_user',
     'file:///config/cloud/.passwd',
     {
         passwordIsUrl: true,
-        port: '8443'
+        port: '8443',
+        passwordEncrypted: true
     }
 )
 .then(function() {
