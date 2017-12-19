@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # Parse the command line arguments
+PASSWORD_ENCRYPTED=false
 while [[ $# -gt 1 ]]; do
     case "$1" in
         --resourceGroup)
@@ -114,20 +115,20 @@ if [[ ! -z $big_iq_lic_host ]]; then
         instance_id=$(echo $instance | grep -E -o "_.{0,3}" | sed 's/_//;s/\"//g')
         jq -c .instanceId=$instance_id $azure_secret_file > tmp.$$.json && mv tmp.$$.json $azure_secret_file
         # Make Azure Rest API call to get frontend port
-        ext_port_via_api=$(/usr/bin/f5-rest-node --use-strict /config/cloud/azure/node_modules/f5-cloud-libs/node_modules/f5-cloud-libs-azure/scripts/scaleSetProvider.js)
+        ext_port_via_api=$(/usr/bin/f5-rest-node /config/cloud/azure/node_modules/f5-cloud-libs/node_modules/f5-cloud-libs-azure/scripts/scaleSetProvider.js)
         big_ip_ext_mgmt_port=$(echo $ext_port_via_api | grep 'Port Selected: ' | awk -F 'Selected: ' '{print $2}')
     fi
     echo "BIG-IP via BIG-IQ Info... IP: $big_ip_ext_mgmt_addr Port: $big_ip_ext_mgmt_port"
-    f5-rest-node /config/cloud/azure/node_modules/f5-cloud-libs/scripts/azure/runScripts.js --base-dir /config/cloud/azure/node_modules/f5-cloud-libs --log-level debug --onboard "--output /var/log/onboard.log --log-level debug --host $self_ip --port $dfl_mgmt_port --ssl-port $mgmt_port -u $user --password-url file://$passwd_file --hostname $instance.azuresecurity.com --license-pool --big-iq-host $big_iq_lic_host --big-iq-user $big_iq_lic_user --big-iq-password-uri file://$big_iq_lic_pwd_file --license-pool-name $big_iq_lic_pool --big-ip-mgmt-address $big_ip_ext_mgmt_addr --big-ip-mgmt-port $big_ip_ext_mgmt_port --ntp $ntp_server --tz $time_zone --db provision.1nicautoconfig:disable --db tmm.maxremoteloglength:2048 --module $mod_prov --module afm:none --signal ONBOARD_DONE" --autoscale "--wait-for ONBOARD_DONE --output /var/log/autoscale.log --log-level debug --host $self_ip --port $mgmt_port -u $user --password-url file://$passwd_file --cloud azure --license-pool --big-iq-host $big_iq_lic_host --big-iq-user $big_iq_lic_user --big-iq-password-uri file://$big_iq_lic_pwd_file --license-pool-name $big_iq_lic_pool --big-ip-mgmt-address $big_ip_ext_mgmt_addr --big-ip-mgmt-port $big_ip_ext_mgmt_port --provider-options scaleSet:$vmss_name,azCredentialsUrl:file://$azure_secret_file,resourceGroup:$resource_group --cluster-action join --device-group Sync $block_sync"
+    f5-rest-node /config/cloud/azure/node_modules/f5-cloud-libs/scripts/azure/runScripts.js --base-dir /config/cloud/azure/node_modules/f5-cloud-libs --log-level debug --onboard "--output /var/log/onboard.log --log-level debug --host $self_ip --port $dfl_mgmt_port --ssl-port $mgmt_port -u $user --password-url file://$passwd_file --password-encrypted --hostname $instance.azuresecurity.com --license-pool --big-iq-host $big_iq_lic_host --big-iq-user $big_iq_lic_user --big-iq-password-uri file://$big_iq_lic_pwd_file --license-pool-name $big_iq_lic_pool --big-ip-mgmt-address $big_ip_ext_mgmt_addr --big-ip-mgmt-port $big_ip_ext_mgmt_port --ntp $ntp_server --tz $time_zone --db provision.1nicautoconfig:disable --db tmm.maxremoteloglength:2048 $usage_analytics --module $mod_prov --module afm:none --signal ONBOARD_DONE" --autoscale "--wait-for ONBOARD_DONE --output /var/log/autoscale.log --log-level debug --host $self_ip --port $mgmt_port -u $user --password-url file://$passwd_file --password-encrypted --cloud azure --license-pool --big-iq-host $big_iq_lic_host --big-iq-user $big_iq_lic_user --big-iq-password-uri file://$big_iq_lic_pwd_file --license-pool-name $big_iq_lic_pool --big-ip-mgmt-address $big_ip_ext_mgmt_addr --big-ip-mgmt-port $big_ip_ext_mgmt_port --provider-options scaleSet:$vmss_name,azCredentialsUrl:file://$azure_secret_file,resourceGroup:$resource_group --cluster-action join --device-group Sync $block_sync"
 else
     # Assume PAYG and licensing is already handled
     echo "Licensing via PAYG, already completed"
-    f5-rest-node /config/cloud/azure/node_modules/f5-cloud-libs/scripts/azure/runScripts.js --base-dir /config/cloud/azure/node_modules/f5-cloud-libs --log-level debug --onboard "--output /var/log/onboard.log --log-level debug --host $self_ip --port $dfl_mgmt_port --ssl-port $mgmt_port -u $user --password-url file://$passwd_file --hostname $instance.azuresecurity.com --ntp $ntp_server --tz $time_zone --db provision.1nicautoconfig:disable --db tmm.maxremoteloglength:2048 $usage_analytics --module $mod_prov --module afm:none --signal ONBOARD_DONE" --autoscale "--wait-for ONBOARD_DONE --output /var/log/autoscale.log --log-level debug --host $self_ip --port $mgmt_port -u $user --password-url file://$passwd_file --cloud azure --provider-options scaleSet:$vmss_name,azCredentialsUrl:file://$azure_secret_file,resourceGroup:$resource_group --cluster-action join --device-group Sync $block_sync"
+    f5-rest-node /config/cloud/azure/node_modules/f5-cloud-libs/scripts/azure/runScripts.js --base-dir /config/cloud/azure/node_modules/f5-cloud-libs --log-level debug --onboard "--output /var/log/onboard.log --log-level debug --host $self_ip --port $dfl_mgmt_port --ssl-port $mgmt_port -u $user --password-url file://$passwd_file --password-encrypted --hostname $instance.azuresecurity.com --ntp $ntp_server --tz $time_zone --db provision.1nicautoconfig:disable --db tmm.maxremoteloglength:2048 $usage_analytics --module $mod_prov --module afm:none --signal ONBOARD_DONE" --autoscale "--wait-for ONBOARD_DONE --output /var/log/autoscale.log --log-level debug --host $self_ip --port $mgmt_port -u $user --password-url file://$passwd_file --password-encrypted --cloud azure --provider-options scaleSet:$vmss_name,azCredentialsUrl:file://$azure_secret_file,resourceGroup:$resource_group --cluster-action join --device-group Sync $block_sync"
 fi
 
 if [ -f /config/cloud/master ]; then
     echo 'SELF-SELECTED as Master ... Initiating Autoscale Cluster'
-    # UCS Loaded?
+    # Check if UCS is loaded
     ucs_loaded=$(cat /config/cloud/master | jq .ucsLoaded)
     echo "UCS Loaded: $ucs_loaded"
 
@@ -140,18 +141,18 @@ if [ -f /config/cloud/master ]; then
             /usr/bin/f5-rest-node /config/cloud/azure/node_modules/f5-cloud-libs/scripts/azure/runScripts.js --base-dir /config/cloud/azure/node_modules/f5-cloud-libs --script " --output /var/log/deployScript.log --log-level debug --file /config/cloud/deploy_waf.sh --cl-args '$waf_script_args' --signal DEPLOY_SCRIPT_DONE "
         fi
         # Unblock the cluster sync
-        f5-rest-node /config/cloud/azure/node_modules/f5-cloud-libs/scripts/autoscale.js --output /var/log/autoscale.log --log-level debug --host $self_ip --port $mgmt_port -u $user --password-url file://$passwd_file --cloud azure --provider-options scaleSet:$vmss_name,azCredentialsUrl:file://$azure_secret_file,resourceGroup:$resource_group --cluster-action unblock-sync
+        f5-rest-node /config/cloud/azure/node_modules/f5-cloud-libs/scripts/autoscale.js --output /var/log/autoscale.log --log-level debug --host $self_ip --port $mgmt_port -u $user --password-url file://$passwd_file --password-encrypted --cloud azure --provider-options scaleSet:$vmss_name,azCredentialsUrl:file://$azure_secret_file,resourceGroup:$resource_group --cluster-action unblock-sync
     fi
 fi
 
-# Create iCall, first check if it already exists
+# Create Cluster Update iCall, first check if it already exists
 icall_handler_name="ClusterUpdateHandler"
 tmsh list sys icall handler | grep $icall_handler_name
 if [[ $? != 0 ]]; then
     if [[ ! -z $big_iq_lic_host ]]; then
-        tmsh create sys icall script ClusterUpdate definition { exec f5-rest-node /config/cloud/azure/node_modules/f5-cloud-libs/scripts/azure/runScripts.js --base-dir /config/cloud/azure/node_modules/f5-cloud-libs --log-level debug --autoscale "--cloud azure --log-level debug --output /var/log/azure-autoscale.log --host localhost --port $mgmt_port --user $user --password-url file://$passwd_file --license-pool --big-iq-host $big_iq_lic_host --big-iq-user $big_iq_lic_user --big-iq-password-uri file://$big_iq_lic_pwd_file --license-pool-name $big_iq_lic_pool --big-ip-mgmt-address $big_ip_ext_mgmt_addr --big-ip-mgmt-port $big_ip_ext_mgmt_port --provider-options scaleSet:$vmss_name,azCredentialsUrl:file://$azure_secret_file,resourceGroup:$resource_group --cluster-action update --device-group Sync" }
+        tmsh create sys icall script ClusterUpdate definition { exec f5-rest-node /config/cloud/azure/node_modules/f5-cloud-libs/scripts/azure/runScripts.js --base-dir /config/cloud/azure/node_modules/f5-cloud-libs --log-level debug --autoscale "--cloud azure --log-level debug --output /var/log/azure-autoscale.log --host localhost --port $mgmt_port --user $user --password-url file://$passwd_file --password-encrypted --license-pool --big-iq-host $big_iq_lic_host --big-iq-user $big_iq_lic_user --big-iq-password-uri file://$big_iq_lic_pwd_file --license-pool-name $big_iq_lic_pool --big-ip-mgmt-address $big_ip_ext_mgmt_addr --big-ip-mgmt-port $big_ip_ext_mgmt_port --provider-options scaleSet:$vmss_name,azCredentialsUrl:file://$azure_secret_file,resourceGroup:$resource_group --cluster-action update --device-group Sync" }
     else
-        tmsh create sys icall script ClusterUpdate definition { exec f5-rest-node /config/cloud/azure/node_modules/f5-cloud-libs/scripts/azure/runScripts.js --base-dir /config/cloud/azure/node_modules/f5-cloud-libs --log-level debug --autoscale "--cloud azure --log-level debug --output /var/log/azure-autoscale.log --host localhost --port $mgmt_port --user $user --password-url file://$passwd_file --provider-options scaleSet:$vmss_name,azCredentialsUrl:file://$azure_secret_file,resourceGroup:$resource_group --cluster-action update --device-group Sync" }
+        tmsh create sys icall script ClusterUpdate definition { exec f5-rest-node /config/cloud/azure/node_modules/f5-cloud-libs/scripts/azure/runScripts.js --base-dir /config/cloud/azure/node_modules/f5-cloud-libs --log-level debug --autoscale "--cloud azure --log-level debug --output /var/log/azure-autoscale.log --host localhost --port $mgmt_port --user $user --password-url file://$passwd_file --password-encrypted --provider-options scaleSet:$vmss_name,azCredentialsUrl:file://$azure_secret_file,resourceGroup:$resource_group --cluster-action update --device-group Sync" }
     fi
     tmsh create sys icall handler periodic /Common/$icall_handler_name { first-occurrence now interval 120 script /Common/ClusterUpdate }
     tmsh save /sys config
@@ -159,20 +160,40 @@ else
     echo "Appears the $icall_handler_name icall already exists!"
 fi
 
-# Create iCall to run Application Insights Provider code if customer requested
+# Create iCall to run Application Insights Provider code if so chosen in the template
 if [[ ! -z $app_insights_key ]]; then
     icall_handler_name="MetricsCollectorHandler"
     tmsh list sys icall handler | grep $icall_handler_name
     if [[ $? != 0 ]]; then
         tmsh create sys icall script MetricsCollector definition { exec f5-rest-node /config/cloud/azure/node_modules/f5-cloud-libs/node_modules/f5-cloud-libs-azure/scripts/appInsightsProvider.js --key $app_insights_key --log-level info }
         tmsh create sys icall handler periodic /Common/$icall_handler_name { first-occurrence now interval 60 script /Common/MetricsCollector }
-        # Need to replace this with a check to determine when the custom Application Insights metric
-        # just created (possibly) is available for consumption by VM Scale sets - Appears to be between 90-180 seconds
-        # Could potentially use Application Insights API (beta) which requires creation of an API key to query
+        # Check to determine when the custom Application Insights metric just created (possibly)
+        # is available for consumption by VM Scale sets
         if [ -f /config/cloud/master ]; then
-            sleep 210
+            api_key_create=$(/usr/bin/f5-rest-node /config/cloud/azure/node_modules/f5-cloud-libs/node_modules/f5-cloud-libs-azure/scripts/appInsightsApiKeyProvider.js --key-operation create)
+            api_key=$(echo "$api_key_create" | grep 'API Key: ' | awk -F 'Key: ' '{print $2}')
+            api_key_id=$(echo "$api_key_create" | grep 'API Key ID: ' | awk -F 'ID: ' '{print $2}')
+            app_insights_id=$(echo "$api_key_create" | grep 'App Insights ID: ' | awk -F 'ID: ' '{print $2}')
+            # Check if metric exists in a while loop (will continue at expiration of ctr * while loop)
+            metric='F5_TMM_CPU'
+            ctr=0
+            while [ $ctr -lt 30 ]; do
+                metric_check=$(curl --silent "https://api.applicationinsights.io/beta/apps/$app_insights_id/metrics/customMetrics%2F$metric" -H "x-api-key: $api_key")
+                echo "DEBUG -- CTR: $ctr Response: $metric_check"
+                if [[ `echo $metric_check | jq '.value'` == *"null"* ]]; then
+                    # Keep trying
+                    ctr=$(($ctr+1))
+                    sleep 10
+                else
+                    # Metric Exists
+                    echo "Metric Created: $metric Metric Check Response: $metric_check"
+                    # Delete API Key
+                    echo "Deleting API Key: $api_key_id"
+                    /usr/bin/f5-rest-node /config/cloud/azure/node_modules/f5-cloud-libs/node_modules/f5-cloud-libs-azure/scripts/appInsightsApiKeyProvider.js --key-operation delete --key-id $api_key_id
+                    break
+                fi
+            done
         fi
-
     else
         echo "Appears the $icall_handler_name icall already exists!"
     fi

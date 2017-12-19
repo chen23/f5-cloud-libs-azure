@@ -41,16 +41,17 @@ appInsights.setup(options.key);
 var client = appInsights.client;
 
 var cpuMetricName = 'F5_TMM_CPU';
-var trafficMetricName = 'F5_TRAFFIC_TOTAL_BYTES';
+var trafficMetricName = 'F5_TMM_TRAFFIC';
 
 
 bigip.init(
     'localhost',
-    'admin',
+    'svc_user',
     'file:///config/cloud/.passwd',
     {
         passwordIsUrl: true,
-        port: '8443'
+        port: '8443',
+        passwordEncrypted: true
     }
 )
 .then(function() {
