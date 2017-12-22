@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /*jshint loopfunc:true */
 
-var LogLevel = 'info';
+var LogLevel = 'debug';
 var Logger = require('f5-cloud-libs').logger;
 var logger = Logger.getLogger({logLevel: LogLevel, fileName: '/var/tmp/azureFailover.log'});
 
@@ -79,10 +79,10 @@ bigip.init(
         globalSettings = results[1];
         Promise.all([
             listRouteTables(),
-            bigip.list('/tm/net/self/self_3nic'),
+            bigip.list('/tm/net/self'),
         ])
         .then((results) => {
-            matchRoutes(results[0], results[1].address, tgStats, globalSettings);
+            matchRoutes(results[0], results[1], tgStats, globalSettings);
         })
         .catch(err => {
             logger.info('Error: ', err);
@@ -153,10 +153,10 @@ function updateRoutes(routeTableGroup, routeTableName, routeName, routeParams) {
 * Determines which routes to update
 *
 * @param {Object} routeTables - All of the route tables in the subscription
-* @param {String} self - The internal self IP address of this BIG-IP
+* @param {String} selfs - The self IPs addresses of this BIG-IP
 *
 */
-function matchRoutes(routeTables, self, tgs, global) {
+function matchRoutes(routeTables, selfs, tgs, global) {
     var hostname = global.hostname;
     var entries = tgs.entries;
     var key;
@@ -169,12 +169,13 @@ function matchRoutes(routeTables, self, tgs, global) {
             });
         }
     }
-
-    var fields = self.split('/');
-    var selfIp = fields[0];
+    var selfsArray = selfs.map(x => [x.name,x.address.split('/')[0]]);
+    var selfIp = selfsArray.filter(x => x[0] == 'self_3nic')[0][1];
+    logger.debug(selfIp);
 
     var routeTag;
     var tgTag;
+    var selfTag;
     var t;
     var routeTableGroup;
     var routeTableName;
@@ -188,7 +189,7 @@ function matchRoutes(routeTables, self, tgs, global) {
         function(resolve, reject) {
             updateRoutes(routeTableGroup, routeTableName, routeName, routeParams)
             .then(function() {
-                logger.info("Update route successful.");
+                logger.info("Update route successful." + routeName);
                 resolve();
             })
             .catch(function(error) {
@@ -208,12 +209,18 @@ function matchRoutes(routeTables, self, tgs, global) {
         if (routeTable.tags && routeTable.tags.f5_ha && routeTable.tags.f5_tg) {
             routeTag = routeTable.tags.f5_ha;
             tgTag = routeTable.tags.f5_tg;
-
+            selfTag = routeTable.tags.f5_self;
+            if (selfTag == undefined) {
+              selfTag = 'self_3nic';
+            }
+            logger.debug('selfTag: ' + selfTag);
             for (t=myTrafficGroupsArr.length-1; t>=0; t--) {
                 if (myTrafficGroupsArr[t].trafficGroup.includes(tgTag) && routeTableTags.indexOf(routeTag) !== -1) {
                     routeTableGroup = routeTable.id.split("/")[4];
                     routeTableName = routeTable.name;
                     routes = routeTable.routes;
+                    selfIp = selfsArray.filter(x => x[0] == selfTag)[0][1];
+                    logger.debug('selfIp: '+ selfIp);
 
                     routes.forEach(function(route) {
                         if (routeFilter.indexOf(route.addressPrefix) !== -1) {
@@ -224,7 +231,7 @@ function matchRoutes(routeTables, self, tgs, global) {
 
                             routeArr = [routeTableGroup, routeTableName, routeName, routeParams];
 
-                            util.tryUntil(this, {maxRetries: 4, retryIntervalMs: 15000}, retryRoutes, routeArr);
+                            //util.tryUntil(this, {maxRetries: 4, retryIntervalMs: 15000}, retryRoutes, routeArr);
                         }
                     });
                 }
@@ -478,7 +485,7 @@ function matchNics(nics, pips, self, tgs, global) {
 
     disassociateArr = [resourceGroup, theirNicName, theirNicParams];
     associateArr = [resourceGroup, myNicName, myNicParams];
-
+    /*
     util.tryUntil(this, {maxRetries: 4, retryIntervalMs: 15000}, retryDissassociateNics, disassociateArr)
     .then(function () {
         logger.info("Disassociate NICs successful.");
@@ -490,6 +497,7 @@ function matchNics(nics, pips, self, tgs, global) {
     .catch(function (error) {
         logger.info('Error: ', error);
     });
+    */
 }
 
 /**
