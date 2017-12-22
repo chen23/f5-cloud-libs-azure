@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /*jshint loopfunc:true */
 
-var LogLevel = 'debug';
+var LogLevel = 'info';
 var Logger = require('f5-cloud-libs').logger;
 var logger = Logger.getLogger({logLevel: LogLevel, fileName: '/var/tmp/azureFailover.log'});
 
@@ -231,7 +231,7 @@ function matchRoutes(routeTables, selfs, tgs, global) {
 
                             routeArr = [routeTableGroup, routeTableName, routeName, routeParams];
 
-                            //util.tryUntil(this, {maxRetries: 4, retryIntervalMs: 15000}, retryRoutes, routeArr);
+                            util.tryUntil(this, {maxRetries: 4, retryIntervalMs: 15000}, retryRoutes, routeArr);
                         }
                     });
                 }
@@ -292,8 +292,10 @@ function listPublicIPs(resourceGroup) {
 * @returns {Array} An array of IP configuration parameters
 */
 function getNicConfig(ipConfig) {
+    logger.debug('getNicConfig: '+ ipConfig.loadBalancerBackendAddressPools);
     return {
         name: ipConfig.name,
+        loadBalancerBackendAddressPools: ipConfig.loadBalancerBackendAddressPools,
         privateIPAllocationMethod: ipConfig.privateIPAllocationMethod,
         privateIPAddress: ipConfig.privateIPAddress,
         primary: ipConfig.primary,
@@ -401,6 +403,7 @@ function matchNics(nics, pips, self, tgs, global) {
     };
 
     nics.forEach(function(nic) {
+        logger.debug('ipConfigurations: ' + nic.ipConfigurations);
         ipConfigurations = nic.ipConfigurations;
         ipConfigurations.forEach(function(ipConfiguration) {
             if (ipConfiguration.privateIPAddress === selfIp) {
@@ -485,7 +488,7 @@ function matchNics(nics, pips, self, tgs, global) {
 
     disassociateArr = [resourceGroup, theirNicName, theirNicParams];
     associateArr = [resourceGroup, myNicName, myNicParams];
-    /*
+    
     util.tryUntil(this, {maxRetries: 4, retryIntervalMs: 15000}, retryDissassociateNics, disassociateArr)
     .then(function () {
         logger.info("Disassociate NICs successful.");
@@ -497,7 +500,7 @@ function matchNics(nics, pips, self, tgs, global) {
     .catch(function (error) {
         logger.info('Error: ', error);
     });
-    */
+    
 }
 
 /**
