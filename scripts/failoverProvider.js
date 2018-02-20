@@ -3,7 +3,7 @@
 
 var LogLevel = 'info';
 var Logger = require('f5-cloud-libs').logger;
-var logger = Logger.getLogger({logLevel: LogLevel, fileName: '/var/tmp/azureFailover.log'});
+var logger = Logger.getLogger({logLevel: LogLevel, fileName: '/var/log/cloud/azure/azureFailover.log'});
 
 var util = require('f5-cloud-libs').util;
 var fs = require('fs');
@@ -20,7 +20,7 @@ var subscriptionId = credentialsFile.subscriptionId;
 var clientId = credentialsFile.clientId;
 var tenantId = credentialsFile.tenantId;
 var secret = credentialsFile.secret;
-var resourceGroup = credentialsFile.resourceGroup;
+var resourceGroup = credentialsFile.resourceGroupName;
 
 var msRestAzure = require('ms-rest-azure');
 var AzureEnvironment = require('ms-rest-azure/lib/azureEnvironment');

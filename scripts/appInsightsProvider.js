@@ -27,7 +27,7 @@ options
 
 
 var Logger = require('f5-cloud-libs').logger;
-var logger = Logger.getLogger({logLevel: options.logLevel, fileName: '/var/log/azureMetricsCollector.log'});
+var logger = Logger.getLogger({logLevel: options.logLevel, fileName: '/var/log/cloud/azure/azureMetricsCollector.log'});
 
 var BigIp = require('f5-cloud-libs').bigIp;
 var bigip = new BigIp({logger: logger});
@@ -54,6 +54,10 @@ bigip.init(
         passwordEncrypted: true
     }
 )
+.then(function() {
+    logger.info("Waiting for BIG-IP to be ready.");
+    return bigip.ready();
+})
 .then(function() {
     Promise.all([
         bigip.list('/tm/sys/tmm-info/stats'),
