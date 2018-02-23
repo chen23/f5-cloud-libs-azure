@@ -23,10 +23,13 @@ var secret = credentialsFile.secret;
 var resourceGroup = credentialsFile.resourceGroupName;
 
 var msRestAzure = require('ms-rest-azure');
-var credentials = new msRestAzure.ApplicationTokenCredentials(clientId, tenantId, secret);
+var AzureEnvironment = require('ms-rest-azure/lib/azureEnvironment');
+var environment = AzureEnvironment.AzureUSGovernment;
+var options = { environment: environment };
+var credentials = new msRestAzure.ApplicationTokenCredentials(clientId, tenantId, secret, options);
 
 var networkManagementClient = require('azure-arm-network');
-var networkClient = new networkManagementClient(credentials, subscriptionId);
+var networkClient = new networkManagementClient(credentials, subscriptionId, environment.resourceManagerEndpointUrl);
 
 if (fs.existsSync('/config/cloud/managedRoutes')) {
     var routeFilter = fs.readFileSync('/config/cloud/managedRoutes', 'utf8').replace(/(\r\n|\n|\r)/gm,"").split(',');
