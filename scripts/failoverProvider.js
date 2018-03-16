@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /*jshint loopfunc:true */
 
-var LogLevel = 'info';
+var LogLevel = 'debug';
 var Logger = require('f5-cloud-libs').logger;
 var logger = Logger.getLogger({logLevel: LogLevel, fileName: '/var/log/cloud/azure/azureFailover.log'});
 
@@ -205,6 +205,7 @@ function matchRoutes(routeTables, self, tgs, global) {
     };
 
     routeTables.forEach(function(routeTable) {
+        logger.debug(routeTable.tags);
         if (routeTable.tags && routeTable.tags.f5_ha && routeTable.tags.f5_tg) {
             routeTag = routeTable.tags.f5_ha;
             tgTag = routeTable.tags.f5_tg;
