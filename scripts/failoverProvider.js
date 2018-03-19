@@ -47,6 +47,8 @@ else {
     logger.info('Route table tag file not found');
 }
 
+logger.debug("routeTableTags: " + routeTableTags);
+
 var extIpName = '-ext-pip';
 var extIpConfigName = '-ext-ipconfig';
 var selfIpConfigName = '-self-ipconfig';
@@ -217,6 +219,7 @@ function matchRoutes(routeTables, self, tgs, global) {
                     routes = routeTable.routes;
 
                     routes.forEach(function(route) {
+                        logger.debug("routeTag: " + routeTag + ", route.addressPrefix: " + route.addressPrefix);
                         if (routeFilter.indexOf(route.addressPrefix) !== -1) {
                             routeName = route.name;
                             route.nextHopType = 'VirtualAppliance';
